@@ -28,44 +28,6 @@ import org.yaml.snakeyaml.resolver.Resolver;
 public class YAMLParser extends ParserBase
 {
     /**
-     * Enumeration that defines all togglable features for YAML parsers.
-     */
-    public enum Feature // implements FormatFeature // in 2.7
-    {
-        ;
-
-        final boolean _defaultState;
-        final int _mask;
-        
-        /**
-         * Method that calculates bit set (flags) of all features that
-         * are enabled by default.
-         */
-        public static int collectDefaults()
-        {
-            int flags = 0;
-            for (Feature f : values()) {
-                if (f.enabledByDefault()) {
-                    flags |= f.getMask();
-                }
-            }
-            return flags;
-        }
-        
-        private Feature(boolean defaultState) {
-            _defaultState = defaultState;
-            _mask = (1 << ordinal());
-        }
-        
-        public boolean enabledByDefault() { return _defaultState; }
-        public boolean enabledIn(int flags) { return (flags & _mask) != 0; }        
-        public int getMask() { return _mask; }
-    }
-
-    // note: does NOT include '0', handled separately
-//    private final static Pattern PATTERN_INT = Pattern.compile("-?[1-9][0-9]*");
-
-    /**
      * We will use pattern that is bit stricter than YAML definition,
      * but we will still allow things like extra '_' in there.
      */
@@ -446,31 +408,7 @@ public class YAMLParser extends ParserBase
         String typeTag = scalar.getTag();
         final int len = value.length();
 
-        if (typeTag == null || typeTag.equals("!")) { // no, implicit
-            Tag nodeTag = _yamlResolver.resolve(NodeId.scalar, value, scalar.getImplicit().canOmitTagInPlainScalar());
-
-            if (nodeTag == Tag.STR) {
-                return JsonToken.VALUE_STRING;
-            }
-            if (nodeTag == Tag.INT) {
-                return _decodeNumberScalar(value, len);
-            }
-            if (nodeTag == Tag.FLOAT) {
-                _numTypesValid = 0;
-                return JsonToken.VALUE_NUMBER_FLOAT;
-            }
-            if (nodeTag == Tag.BOOL) {
-                Boolean B = _matchYAMLBoolean(value, len);
-                if (B != null) {
-                    return B ? JsonToken.VALUE_TRUE : JsonToken.VALUE_FALSE;
-                }
-            } else if (nodeTag == Tag.NULL) {
-                return JsonToken.VALUE_NULL;
-            } else {
-                // what to do with timestamp and binary and merge etc.
-                return JsonToken.VALUE_STRING;
-            }
-        } else { // yes, got type tag
+        if (typeTag != null && !typeTag.equals("!")) {
             if (typeTag.startsWith("tag:yaml.org,2002:")) {
                 typeTag = typeTag.substring("tag:yaml.org,2002:".length());
                 if (typeTag.contains(",")) {
@@ -490,6 +428,41 @@ public class YAMLParser extends ParserBase
                 return JsonToken.VALUE_NUMBER_FLOAT;
             } else if ("null".equals(typeTag)) {
                 return JsonToken.VALUE_NULL;
+            }
+        } else {
+            Tag nodeTag = _yamlResolver.resolve(NodeId.scalar, value, scalar.getImplicit().canOmitTagInPlainScalar());
+            if (nodeTag == Tag.STR) {
+                return JsonToken.VALUE_STRING;
+            }
+
+            if (nodeTag == Tag.INT) {
+        if (YAMLParser.Feature.READ_INT_AS_STRINGS.enabledIn(_formatFeatures)) {
+          return JsonToken.VALUE_STRING;
+        }
+                return _decodeNumberScalar(value, len);
+            }
+
+            if (nodeTag == Tag.FLOAT) {
+        if (YAMLParser.Feature.READ_FLOAT_AS_STRINGS.enabledIn(_formatFeatures)) {
+          return JsonToken.VALUE_STRING;
+        }
+                _numTypesValid = 0;
+                return JsonToken.VALUE_NUMBER_FLOAT;
+            }
+
+            if (nodeTag == Tag.BOOL) {
+                Boolean B = _matchYAMLBoolean(value, len);
+                if (B != null) {
+                    return B ? JsonToken.VALUE_TRUE : JsonToken.VALUE_FALSE;
+                }
+            } else if (nodeTag == Tag.NULL) {
+                if (YAMLParser.Feature.READ_NULL_AS_STRINGS.enabledIn(_formatFeatures)) {
+                    return JsonToken.VALUE_STRING;
+                }
+                return JsonToken.VALUE_NULL;
+            } else {
+                // what to do with timestamp and binary and merge etc.
+                return JsonToken.VALUE_STRING;
             }
         }
         
@@ -835,5 +808,44 @@ public class YAMLParser extends ParserBase
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Enumeration that defines all togglable features for YAML parsers.
+     */
+    public enum Feature {
+        READ_INT_AS_STRINGS(false),
+        READ_FLOAT_AS_STRINGS(false),
+        READ_BOOL_AS_STRINGS(false),
+        READ_NULL_AS_STRINGS(false);
+
+        final boolean _defaultState;
+        final int _mask;
+
+        public static int collectDefaults() {
+            int flags = 0;
+            YAMLParser.Feature[] var1 = values();
+            int var2 = var1.length;
+
+            for(int var3 = 0; var3 < var2; ++var3) {
+                YAMLParser.Feature f = var1[var3];
+                if (f.enabledByDefault()) {
+                    flags |= f.getMask();
+                }
+            }
+
+            return flags;
+        }
+
+        Feature(boolean defaultState) {
+            this._defaultState = defaultState;
+            this._mask = 1 << ordinal();
+        }
+
+        public boolean enabledByDefault() { return _defaultState; }
+
+        public boolean enabledIn(int flags) { return (flags & _mask) != 0; }
+
+        public int getMask() { return _mask; }
     }
 }

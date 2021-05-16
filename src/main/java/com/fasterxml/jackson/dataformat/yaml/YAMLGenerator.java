@@ -23,7 +23,7 @@ public class YAMLGenerator extends GeneratorBase
     /**
      * Enumeration that defines all togglable features for YAML generators
      */
-    public enum Feature // implements FormatFeature // for 2.7
+  public enum Feature implements FormatFeature // since 2.9
     {
         /**
          * Whether we are to write an explicit document start marker ("---")
@@ -91,8 +91,28 @@ public class YAMLGenerator extends GeneratorBase
          *
          * @since 2.8.2
          */
-        ALWAYS_QUOTE_NUMBERS_AS_STRINGS(false)
-        ;
+        ALWAYS_QUOTE_NUMBERS_AS_STRINGS(false),
+
+        /**
+         * Whether for string containing newlines a <a href="http://www.yaml.org/spec/1.2/spec.html#style/block/literal">literal block style</a>
+         * should be used. This automatically enabled when {@link #MINIMIZE_QUOTES} is set.
+         * <p>
+         * The content of such strings is limited to printable characters according to the rules of
+         * <a href="http://www.yaml.org/spec/1.2/spec.html#style/block/literal">literal block style</a>.
+         *
+         * @since 2.9
+         */
+        LITERAL_BLOCK_STYLE(false),
+
+        /**
+         * Feature enabling of which adds indentation for array entry generation
+         * (default indentation being 2 spaces).
+         *<p>
+         * Default value is `false` for backwards compatibility
+         *
+         * @since 2.9
+         */
+        INDENT_ARRAYS(false);
 
         protected final boolean _defaultState;
         protected final int _mask;
@@ -117,8 +137,11 @@ public class YAMLGenerator extends GeneratorBase
             _mask = (1 << ordinal());
         }
 
+        @Override
         public boolean enabledByDefault() { return _defaultState; }
+        @Override
         public boolean enabledIn(int flags) { return (flags & _mask) != 0; }
+        @Override
         public int getMask() { return _mask; }
     }
 
@@ -229,6 +252,11 @@ public class YAMLGenerator extends GeneratorBase
         }
         // [dataformat#35]: split-lines for text blocks?
         opt.setSplitLines(Feature.SPLIT_LINES.enabledIn(_formatFeatures));
+        // [dataformat-yaml#67]: array indentation?
+        if (Feature.INDENT_ARRAYS.enabledIn(_formatFeatures)) {
+          opt.setIndicatorIndent(2);
+        }
+
         return opt;
     }
 
@@ -288,6 +316,8 @@ public class YAMLGenerator extends GeneratorBase
 
     @Override
     public JsonGenerator overrideFormatFeatures(int values, int mask) {
+        // 14-Mar-2016, tatu: Should re-configure, but unfortunately most
+        //    settings passed via options passed to constructor of Emitter
         _formatFeatures = (_formatFeatures & ~mask) | (values & mask);
         return this;
     }
@@ -488,7 +518,10 @@ public class YAMLGenerator extends GeneratorBase
             } else {
                 style = STYLE_PLAIN;
             }
+        } else if (Feature.LITERAL_BLOCK_STYLE.enabledIn(_formatFeatures) && text.indexOf('\n') >= 0) {
+            style = STYLE_LITERAL;
         }
+
         _writeScalar(text, "string", style);
     }
 
