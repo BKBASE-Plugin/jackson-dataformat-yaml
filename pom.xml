@@ -1,35 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion> 
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.fasterxml.jackson</groupId>
     <artifactId>jackson-parent</artifactId>
     <version>2.8</version>
   </parent>
 
-  <groupId>com.fasterxml.jackson.dataformat</groupId>
+  <groupId>com.tencent.bk.base.datalab</groupId>
   <artifactId>jackson-dataformat-yaml</artifactId>
-    <version>2.8.10-bk0.1</version>
-  <packaging>bundle</packaging>
+  <version>2.8.10-bkbase.1</version>
+  <packaging>jar</packaging>
+
   <name>Jackson-dataformat-YAML</name>
-  <description>Support for reading and writing YAML-encoded data via Jackson abstractions.
-  </description>
+  <description>Support for reading and writing YAML-encoded data via Jackson abstractions.</description>
   <url>https://github.com/FasterXML/jackson</url>
+
   <scm>
-    <connection>scm:git:git@github.com:FasterXML/jackson-dataformat-yaml.git</connection>
-    <developerConnection>scm:git:git@github.com:FasterXML/jackson-dataformat-yaml.git</developerConnection>
-    <url>http://github.com/FasterXML/jackson-dataformat-yaml</url>    
-    <tag>jackson-dataformat-yaml-2.8.10</tag>
+    <connection>scm:git:https://github.com/yangliang9004/jackson-dataformat-yaml.git</connection>
+    <developerConnection>scm:git:https://github.com/yangliang9004/jackson-dataformat-yaml.git</developerConnection>
+    <url>https://github.com/yangliang9004/jackson-dataformat-yaml/tree/for-bkbase</url>
   </scm>
+
+  <developers>
+    <developer>
+      <name>bk-base</name>
+      <id>bk-base</id>
+      <url>https://bk.tencent.com/</url>
+      <email>contactus_bk@tencent.com</email>
+      <roles>
+        <role>Manager</role>
+      </roles>
+      <timezone>+8</timezone>
+    </developer>
+  </developers>
+
+  <licenses>
+    <license>
+      <name>Apache Software Foundation (ASF)</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <version.jackson.core>2.8.10</version.jackson.core>
-
     <packageVersion.dir>com/fasterxml/jackson/dataformat/yaml</packageVersion.dir>
     <packageVersion.package>${project.groupId}.yaml</packageVersion.package>
     <!-- 18-May-2016, tatu: used to have to specify `osgi.private` to included shaded
-           package; but must NOT when included as regular dependency
-      -->
+           package; but must NOT when included as regular dependency-->
     <pax.url.version>1.2.8</pax.url.version>
     <pax.exam.version>4.3.0</pax.exam.version>
     <felix.version>4.0.3</felix.version>
@@ -168,7 +197,70 @@
               <include>**/Test*.java</include>
             </includes>
           </configuration>
-        </plugin>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>9927B3AD</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.4</version>
+        <configuration>
+          <aggregate>true</aggregate>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <sourceFileExcludes>
+                <!--忽略动态生成的java文件-->
+                <sourceFileExclude>**/target/**/*.java</sourceFileExclude>
+              </sourceFileExcludes>
+              <!--忽略javadoc生成过程中的警告，比如方法注释缺少@return @param-->
+              <additionalparam>-Xdoclint:none</additionalparam>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+              <goal>test-jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>2.4</version>
+      </plugin>
+
     </plugins>
   </build>
 
